@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  email    String  @unique
+  password String
+  role     String  // "admin", "manager", "employee"
+  projects Project[]
+}
+
+model Project {
+  id            Int     @id @default(autoincrement())
+  name          String
+  blocks        Json?   // { id: string; label: string; type: string; color: string }[]
+  workspaceOrder Json?  // string[] (id блоков)
+  userId       Int
+  user          User    @relation(fields: [userId], references: [id])
+  tasks         Task[]
+}
+
+model Task {
+  id          Int     @id @default(autoincrement())
+  projectId   Int
+  project     Project @relation(fields: [projectId], references: [id])
+  cells       Json?   // { [blockId]: string | { type: string, file: string } }
+  status      String  @default("не сдано") // "не сдано", "на рассмотрении", "сдано"
+  submittedAt DateTime?
+}
