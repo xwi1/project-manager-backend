@@ -2,15 +2,21 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../config/db');
 
+
 // Логин
 router.post('/login', async (req, res) => {
-  const { email } = req.body;
+  const { email, password } = req.body; // Получаем email и пароль
   
   try {
     const user = await prisma.user.findUnique({ where: { email } });
     
     if (!user) {
       return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+    
+    // Проверка пароля (без хеширования)
+    if (user.password !== password) {
+      return res.status(401).json({ error: 'Неверный пароль' });
     }
     
     res.json({

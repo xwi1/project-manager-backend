@@ -17,19 +17,33 @@ router.get('/', async (req, res) => {
 
 // Создать проект
 router.post('/', async (req, res) => {
-  const { name, userId } = req.body;
   try {
     const project = await prisma.project.create({
       data: {
-        name,
-        userId: parseInt(userId),
-        blocks: [],
-        workspaceOrder: [],
+        name: req.body.name,
+        userId: parseInt(req.body.userId),
+        blocks: [], // Явно инициализируем пустые массивы
+        workspaceOrder: []
       },
+      include: { // Включаем связанные задачи
+        tasks: true 
+      }
     });
-    res.json(project);
+
+    res.json({
+      ...project,
+      tasks: project.tasks.map(task => ({
+        ...task,
+        cells: task.cells || {} // Гарантируем наличие поля cells
+      }))
+    });
+
   } catch (error) {
-    res.status(500).json({ error: 'Ошибка создания проекта' });
+    console.error('Ошибка создания проекта:', error);
+    res.status(500).json({ 
+      error: 'Ошибка сервера',
+      details: error.message 
+    });
   }
 });
 
