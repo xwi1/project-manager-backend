@@ -20,35 +20,39 @@ router.post('/', async (req, res) => {
 });
 
 // Обновить задачу
-router.put('/:id', async (req, res) => {
-  const { id } = req.params;
-  const { cells } = req.body;
-  try {
-    const updatedTask = await prisma.task.update({
-      where: { id: parseInt(id) },
-      data: { cells },
-    });
-    res.json(updatedTask);
-  } catch (error) {
-    res.status(500).json({ error: 'Ошибка обновления задачи' });
-  }
-});
+// router.put('/:id', async (req, res) => {
+//   const { id } = req.params;
+//   const { cells } = req.body;
+//   try {
+//     const updatedTask = await prisma.task.update({
+//       where: { id: parseInt(id) },
+//       data: { cells },
+//     });
+//     res.json(updatedTask);
+//   } catch (error) {
+//     res.status(500).json({ error: 'Ошибка обновления задачи' });
+//   }
+// });
 
 // Изменить статус задачи
-router.put('/:id/status', async (req, res) => {
+router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { status } = req.body;
+  const { newStatus } = req.body;
+  console.log(id)
+  console.log(newStatus)
   try {
     const updatedTask = await prisma.task.update({
-      where: { id: parseInt(id) },
+      where: { id: id },
       data: {
-        status,
-        submittedAt: status === 'на рассмотрении' ? new Date() : null,
+        status: newStatus,
+        submittedAt: newStatus === 'на рассмотрении' ? new Date() : null,
       },
     });
     res.json(updatedTask);
+    console.log(updatedTask)
   } catch (error) {
     res.status(500).json({ error: 'Ошибка обновления статуса' });
+    console.log(error)
   }
 });
 
@@ -77,5 +81,19 @@ router.get('/pending', async (req, res) => {
     res.status(500).json({ error: 'Ошибка получения задач' });
   }
 });
+
+router.delete('/', async (req, res) => {
+  const { taskId } = req.body
+
+  try {
+    const response = await prisma.task.delete({
+      where: { id: taskId }
+    })
+    res.json({ response })
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({ error: 'Ошибка удаления задачи' })
+  }
+})
 
 module.exports = router;

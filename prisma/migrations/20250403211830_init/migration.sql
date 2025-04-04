@@ -21,7 +21,7 @@ CREATE TABLE "Project" (
 
 -- CreateTable
 CREATE TABLE "Task" (
-    "id" SERIAL NOT NULL,
+    "id" BIGSERIAL NOT NULL,
     "projectId" INTEGER NOT NULL,
     "cells" JSONB,
     "status" TEXT NOT NULL DEFAULT 'не сдано',
