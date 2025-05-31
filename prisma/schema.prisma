@@ -7,29 +7,91 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Модель User (Пользователь)
 model User {
-  id       Int     @id @default(autoincrement())
-  email    String  @unique
-  password String
-  role     String  // "admin", "manager", "employee"
-  projects Project[]
+  id           Int          @id @default(autoincrement())
+  email        String       @unique
+  password     String
+  departmentId Int?
+  department   Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  roles        UserRole[]   // onDelete настраивается в UserRole
+  projects     Project[]    // onDelete настраивается в Project
+  cells        Cell[]       // onDelete настраивается в Cell
 }
 
+// Модель Role (Роль)
+model Role {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique
+  description String
+  users       UserRole[]   // onDelete настраивается в UserRole
+}
+
+// Модель UserRole (Связующая таблица для ролей и пользователей)
+model UserRole {
+  userId Int
+  roleId Int
+  user   User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+// Модель Department (Отдел)
+model Department {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  users    User[]     // Удаление пользователей при удалении отдела
+  projects Project[] // Удаление проектов при удалении отдела
+}
+
+// Модель Project (Проект)
 model Project {
-  id            Int     @id @default(autoincrement())
-  name          String
-  blocks        Json?   // { id: string; label: string; type: string; color: string }[]
-  workspaceOrder Json?  // string[] (id блоков)
-  userId       Int
-  user          User    @relation(fields: [userId], references: [id])
-  tasks         Task[]
+  id        Int      @id @default(autoincrement())
+  name      String
+  userId    Int?
+  user      User?     @relation(fields: [userId], references: [id], onDelete:  SetNull) // Обнуление userId при удалении пользователя
+  departmentId Int?
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull) // Удаление проекта при удалении отдела
+  tasks     Task[]    // Удаление задач при удалении проекта
+  blocks    Block[]   // Удаление блоков при удалении проекта
 }
 
+// Модель Block (Блок)
+model Block {
+  id        String      @id @default(uuid())
+  projectId Int
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade) // Удаление блока при удалении проекта
+  label     String
+  type      String
+  color     String
+  order     Int?
+  cells     Cell[]
+}
+
+// Модель Task (Задача)
 model Task {
-  id          String   @id @default(uuid()) // <-- UUID вместо Int/BigInt
+  id          String   @id @default(uuid())
   projectId   Int
-  project     Project  @relation(fields: [projectId], references: [id])
-  cells       Json?
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade) // Удаление задачи при удалении проекта
   status      String   @default("не сдано")
   submittedAt DateTime?
+  parentId    String?
+  parent      Task?    @relation("TaskHierarchy", fields: [parentId], references: [id], onDelete: SetNull) // Обнуление parentId при удалении родительской задачи
+  children    Task[]   @relation("TaskHierarchy") // onDelete наследуется от parent
+  order       Int?
+  cells       Cell[] 
+}
+
+// Модель Cell (Ячейка)
+model Cell {
+  id         Int      @id @default(autoincrement())
+  taskId     String
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade) // Удаление ячейки при удалении задачи
+  blockId    String
+  block      Block    @relation(fields: [blockId], references: [id], onDelete: Cascade) // Удаление ячейки при удалении блока
+  value      String?
+  type       String
+  userId     Int?     // ID пользователя (для типа "control")
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull) // Обнуление userId при удалении пользователя
 }
