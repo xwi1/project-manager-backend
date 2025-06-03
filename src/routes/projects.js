@@ -101,7 +101,7 @@ router.put('/:id/save', async (req, res) => {
   const { id } = req.params;
   const { blocks, tasks } = req.body;
 
-  console.log(tasks[0].cells)
+  console.log(blocks)
 
   try {
     // Обновляем блоки
@@ -131,7 +131,7 @@ router.put('/:id/save', async (req, res) => {
         // Преобразуем cells из объекта в массив
         const cellsArray = Object.entries(task.cells).map(([blockId, cellData]) => ({
           blockId,
-          value: cellData.value, // Значение ячейки
+          value: cellData.value.toString(), // Значение ячейки
           type: cellData.type || 'text', // Тип ячейки
           taskId: createdTask.id,
         }));
@@ -148,6 +148,53 @@ router.put('/:id/save', async (req, res) => {
     res.json({ message: 'Проект успешно сохранен', updatedBlocks, updatedTasks });
   } catch (error) {
     res.status(500).json({ error: 'Ошибка сохранения проекта', details: error.message });
+    console.log(error);
+  }
+});
+
+// Обновление проекта
+router.put('/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, departmentId } = req.body;
+
+  try {
+    // Находим проект
+    const project = await prisma.project.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!project) {
+      return res.status(404).json({ error: 'Проект не найден' });
+    }
+
+    // Обновляем проект
+    const updatedProject = await prisma.project.update({
+      where: { id: parseInt(id) },
+      data: {
+        name,
+        departmentId: departmentId === null ? null : parseInt(departmentId), // Учитываем null
+      },
+    });
+
+    res.json(updatedProject);
+  } catch (error) {
+    console.error('Ошибка обновления проекта:', error);
+    res.status(500).json({ error: 'Ошибка обновления проекта' });
+  }
+});
+
+// Удаление проекта
+router.delete('/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const deletedProject = await prisma.project.delete({
+      where: { id: parseInt(id) },
+    });
+
+    res.json({ message: 'Проект успешно удален', deletedProject });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка удаления проекта', details: error.message });
     console.log(error);
   }
 });
