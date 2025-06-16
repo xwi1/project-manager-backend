@@ -27,6 +27,44 @@ async function seedRoles() {
   }
 }
 
+async function seedAdmin() {
+  try {
+
+    const adminRole = await prisma.role.findUnique({ where:{ name: 'admin' } })    
+    
+    const user = await prisma.user.upsert({
+      where: {
+        email: 'admin@mail.ru'
+      },
+      update: {},
+      create: {
+        name: 'Администратор сайта',
+        email: 'admin@mail.ru',
+        password: 'admin',
+        departmentId: null,
+        roles: { 
+          create: {
+            role: {
+              connect: { id: adminRole.id }
+            }
+          }
+        }
+      }
+    })
+    
+
+
+
+    console.log("Администратор успешно добавлен.")
+  } catch (error) {
+    console.error("Ошибка при добавлении админа")
+    // console.log(error)
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
 seedRoles();
+seedAdmin()
 
 module.exports = prisma;

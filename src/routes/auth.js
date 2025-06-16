@@ -24,6 +24,7 @@ router.post('/login', async (req, res) => {
     // Возвращаем роли пользователя
     res.json({
       id: user.id,
+      name: user.name,
       email: user.email,
       roles: user.roles.map((userRole) => userRole.role.name),
       department: user.department?.name || null,
@@ -37,13 +38,13 @@ router.post('/login', async (req, res) => {
 
 // Регистрация
 router.post('/register', async (req, res) => {
-  const { email, password, roleNames, departmentId } = req.body;
+  const { name, email, password, roleNames, departmentId } = req.body;
 
   try {
     const existingUser = await prisma.user.findUnique({ where: { email } });
 
     if (existingUser) {
-      return res.status(400).json({ error: 'Email уже занят' });
+      return res.status(400).json({ error: 'Такой пользователь уже существует' });
     }
 
     // Находим роли по их названиям
@@ -53,6 +54,7 @@ router.post('/register', async (req, res) => {
 
     const newUser = await prisma.user.create({
       data: {
+        name,
         email,
         password,
         departmentId: departmentId || null,
@@ -64,6 +66,7 @@ router.post('/register', async (req, res) => {
 
     res.json({
       id: newUser.id,
+      name: newUser.name,
       email: newUser.email,
       roles: roleNames,
       department: departmentId ? { id: departmentId } : null,

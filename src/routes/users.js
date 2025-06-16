@@ -9,6 +9,7 @@ router.get('/', async (req, res) => {
     const users = await prisma.user.findMany({
       select: {
         id: true,
+        name: true,
         email: true,
         departmentId: true,
         roles: {
@@ -39,12 +40,13 @@ router.get('/', async (req, res) => {
 // Обновление данных пользователя
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { email, password, departmentId, roles } = req.body;
+  const { name, email, password, departmentId, roles } = req.body;
 
   try {
     const updatedUser = await prisma.user.update({
       where: { id: parseInt(id) },
       data: {
+        name,
         email,
         password: password ? await bcrypt.hash(password, 10) : undefined, // Хэшируем пароль, если он передан
         departmentId: departmentId === null ? null : parseInt(departmentId),
