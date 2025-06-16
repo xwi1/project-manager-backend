@@ -7,8 +7,42 @@ router.get('/', async (req, res) => {
   const { userId } = req.query;
 
   try {
+    // Проверяем, передан ли userId
+    if (!userId) {
+      return res.status(400).json({ error: 'Необходимо указать ID пользователя' });
+    }
+
+    // Находим пользователя по userId
+    const user = await prisma.user.findUnique({
+      where: { id: parseInt(userId) },
+      include: { roles: { include: { role: true } }, department: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    // Определяем роли пользователя
+    const userRoles = user.roles.map((userRole) => userRole.role.name);
+
+    // Формируем условия для фильтрации проектов
+    let projectFilter = {};
+    if (userRoles.includes('admin')) {
+      // Администратор может видеть все проекты
+      projectFilter = {};
+    } else if (userRoles.includes('manager') || userRoles.includes('employee')) {
+      // Менеджеры и сотрудники могут видеть только проекты своего отдела
+      projectFilter = {
+        departmentId: user.department?.id || null,
+      };
+    } else {
+      // Если роль пользователя не определена, возвращаем пустой список
+      return res.json([]);
+    }
+
+    // Получаем проекты с учетом фильтра
     const projects = await prisma.project.findMany({
-      where: { userId: userId ? parseInt(userId) : null },
+      where: projectFilter,
       include: {
         blocks: true,
         tasks: {
@@ -28,6 +62,7 @@ router.get('/', async (req, res) => {
           acc[cell.blockId] = {
             value: cell.value,
             type: cell.type,
+            assignedUser: cell.userId,
           };
           return acc;
         }, {}),
@@ -134,11 +169,18 @@ router.put('/:id/save', async (req, res) => {
           value: cellData.value.toString(), // Значение ячейки
           type: cellData.type || 'text', // Тип ячейки
           taskId: createdTask.id,
+          userId: cellData.assignedUser
         }));
 
         // Создаем ячейки для задачи
         await prisma.cell.createMany({
-          data: cellsArray,
+          data: cellsArray.map((cell) => ({
+            blockId: cell.blockId,
+            value: cell.value,
+            type: cell.type,
+            taskId: createdTask.id,
+            userId: cell.userId || null, // Добавляем userId из данных ячейки
+          })),
         });
 
         return createdTask;

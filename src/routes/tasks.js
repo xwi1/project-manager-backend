@@ -8,17 +8,43 @@ router.put('/:id', async (req, res) => {
   const { newStatus } = req.body;
 
   try {
+    // Обновляем статус задачи
     const updatedTask = await prisma.task.update({
-      where: { id: id },
+      where: { id },
       data: {
         status: newStatus,
-        submittedAt: newStatus === 'на рассмотрении' ? new Date() : null,
+        submittedAt: newStatus === 'under_review' ? new Date() : null,
       },
     });
+
+    // Если задача стала не назначенной, то очищаем ячейки
+    if (newStatus === "not_assigned") {
+      // Находим ячейку по taskId и type
+      const cell = await prisma.cell.findFirst({
+        where: {
+          taskId: id,
+          type: 'control',
+        },
+      });
+
+      if (cell) {
+        // Обновляем ячейку по уникальному идентификатору
+        await prisma.cell.update({
+          where: {
+            id: cell.id,
+          },
+          data: {
+            value: '',
+            userId: null,
+          },
+        });
+      }
+    }
+
     res.json(updatedTask);
   } catch (error) {
     res.status(500).json({ error: 'Ошибка обновления статуса' });
-    console.log(error);
+    console.error(error);
   }
 });
 
