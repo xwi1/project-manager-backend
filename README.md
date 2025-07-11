@@ -10,11 +10,30 @@ sudo apt install nodejs npm postgresql git
 ```
 sudo -u postgres psql
 ```
-### Выполните следующую команду, просто поменяйте название для базы данных (mydb) и пользователя (myuser) с его паролем (mypassword)
+### Выполните следующие команды, просто поменяйте название для базы данных (mydb) и пользователя (myuser) с его паролем (mypassword)
+Создаём базу данных
 ```
 CREATE DATABASE mydb;
+```
+Создаём пользователя с паролем
+```
 CREATE USER myuser WITH PASSWORD 'mypassword';
-GRANT ALL PRIVILEGES ON DATABASE mydb TO myuser;
+```
+Даем пользователю право создавать базы данных
+```
+ALTER USER myuser CREATEDB;
+```
+Подключаемся к базе данных
+```
+\c mydb
+```
+Выдаём права
+```
+GRANT CREATE, USAGE ON SCHEMA public TO myuser;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO myuser;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO myuser;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON TABLES TO myuser;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO myuser;
 \q
 ```
 
@@ -52,7 +71,7 @@ PORT=5000
 
 ## 5. Проведите миграции для базы данных
 ```
-npx prisma migrate dev
+npx prisma migrate deploy
 ```
 
 ## 6. Запустите приложение
